@@ -1,7 +1,7 @@
 {
   "name": "xid-ts",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "0xZensh <txr1883@gmail.com>",
   "description": "xid is a globally unique id generator thought for the web. A Typescript port of https://github.com/rs/xid.",
   "license": "MIT",
@@ -23,8 +23,8 @@
     "build:tsup": "tsup src/index.ts --dts --sourcemap --format esm",
     "check": "tsc --noEmit -p tsconfig.json",
     "clean": "rm -rf dist",
-    "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\"",
-    "lint:fix": "eslint \"src/**/*.ts\" \"test/**/*.ts\" --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "vitest src --coverage --run"
   },
   "devDependencies": {

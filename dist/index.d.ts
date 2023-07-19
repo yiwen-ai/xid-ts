@@ -1,10 +1,10 @@
 declare class Xid {
-    private id;
     private static machineId;
     private static pid;
     private static counter;
+    private id;
     constructor(id?: Uint8Array);
-    static next(): Xid;
+    static default(): Xid;
     static from(v: Xid | string | ArrayBuffer | Uint8Array | number[]): Xid;
     static parse(id: string): Xid;
     private decode;

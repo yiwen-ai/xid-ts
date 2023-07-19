@@ -9,15 +9,5 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true
-  },
-  "include": [
-		"src/**/*.ts",
-		"test/**/*.ts"
-	],
-	"exclude": [
-		"src/**/*.test.ts",
-		"node_modules",
-		"dist",
-		"debug"
-	]
+  }
 }

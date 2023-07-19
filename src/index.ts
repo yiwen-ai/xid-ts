@@ -1,3 +1,6 @@
+// (c) 2023-present, Yiwen AI Limited. All rights reserved.
+// See the file LICENSE for licensing terms.
+
 const encodedLen = 20 // string encoded len
 const rawLen = 12 // binary raw len
 const errInvalidID = "xid: invalid ID"
@@ -16,30 +19,38 @@ export class Xid {
   private static pid = getPid()
   private static counter = start[0] << 16 | start[1] << 8 | start[2]
 
-  constructor(private id = new Uint8Array(rawLen).fill(0)) {
-  }
+  private id: Uint8Array
+  constructor(id?: Uint8Array) {
+    if (id == null) {
+      id = new Uint8Array(rawLen)
+      const view = new DataView(id.buffer)
+      const timestamp = Math.floor(Date.now() / 1000)
+      view.setUint32(0, timestamp)
 
-  static next(): Xid {
-    const xid = new Xid()
-    const view = new DataView(xid.id.buffer)
-    const timestamp = Math.floor(Date.now() / 1000)
-    view.setUint32(0, timestamp)
+      id[4] = Xid.machineId[0]
+      id[5] = Xid.machineId[1]
+      id[6] = Xid.machineId[2]
+      id[7] = Xid.pid >> 8
+      id[8] = Xid.pid & 0x00FF
 
-    xid.id[4] = Xid.machineId[0]
-    xid.id[5] = Xid.machineId[1]
-    xid.id[6] = Xid.machineId[2]
-    xid.id[7] = Xid.pid >> 8
-    xid.id[8] = Xid.pid & 0x00FF
+      Xid.counter += 1
+      if (Xid.counter > 0xFFFFFF) {
+        Xid.counter = 0
+      }
 
-    Xid.counter += 1
-    if (Xid.counter > 0xFFFFFF) {
-      Xid.counter = 0
+      id[9] = Xid.counter >> 16
+      id[10] = Xid.counter & 0x00FFFF >> 8
+      id[11] = Xid.counter & 0x0000FF
+
+    } else if (!(id instanceof Uint8Array) || id.length !== rawLen) {
+      throw new Error(errInvalidID)
     }
 
-    xid.id[9] = Xid.counter >> 16
-    xid.id[10] = Xid.counter & 0x00FFFF >> 8
-    xid.id[11] = Xid.counter & 0x0000FF
-    return xid
+    this.id = id
+  }
+
+  static default(): Xid {
+    return new Xid(new Uint8Array(rawLen).fill(0))
   }
 
   static from(v: Xid | string | ArrayBuffer | Uint8Array | number[]): Xid {

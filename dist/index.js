@@ -11,30 +11,35 @@ for (let i = 0; i < encoding.length; i++) {
 }
 var start = getRandom3Bytes();
 var Xid = class _Xid {
-  constructor(id = new Uint8Array(rawLen).fill(0)) {
-    this.id = id;
-  }
   static machineId = getRandom3Bytes();
   static pid = getPid();
   static counter = start[0] << 16 | start[1] << 8 | start[2];
-  static next() {
-    const xid = new _Xid();
-    const view = new DataView(xid.id.buffer);
-    const timestamp = Math.floor(Date.now() / 1e3);
-    view.setUint32(0, timestamp);
-    xid.id[4] = _Xid.machineId[0];
-    xid.id[5] = _Xid.machineId[1];
-    xid.id[6] = _Xid.machineId[2];
-    xid.id[7] = _Xid.pid >> 8;
-    xid.id[8] = _Xid.pid & 255;
-    _Xid.counter += 1;
-    if (_Xid.counter > 16777215) {
-      _Xid.counter = 0;
+  id;
+  constructor(id) {
+    if (id == null) {
+      id = new Uint8Array(rawLen);
+      const view = new DataView(id.buffer);
+      const timestamp = Math.floor(Date.now() / 1e3);
+      view.setUint32(0, timestamp);
+      id[4] = _Xid.machineId[0];
+      id[5] = _Xid.machineId[1];
+      id[6] = _Xid.machineId[2];
+      id[7] = _Xid.pid >> 8;
+      id[8] = _Xid.pid & 255;
+      _Xid.counter += 1;
+      if (_Xid.counter > 16777215) {
+        _Xid.counter = 0;
+      }
+      id[9] = _Xid.counter >> 16;
+      id[10] = _Xid.counter & 65535 >> 8;
+      id[11] = _Xid.counter & 255;
+    } else if (!(id instanceof Uint8Array) || id.length !== rawLen) {
+      throw new Error(errInvalidID);
     }
-    xid.id[9] = _Xid.counter >> 16;
-    xid.id[10] = _Xid.counter & 65535 >> 8;
-    xid.id[11] = _Xid.counter & 255;
-    return xid;
+    this.id = id;
+  }
+  static default() {
+    return new _Xid(new Uint8Array(rawLen).fill(0));
   }
   static from(v) {
     if (v instanceof _Xid) {
