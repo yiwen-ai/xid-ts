@@ -41,10 +41,10 @@ assert.equal(xid.toString(), '9m4e2mr0ui3e8a215n4g')
 assert.equal(xid.timestamp(), 1300816219)
 assert.equal(xid.counter(), 4271561)
 assert.equal(xid.equals(newXid), false)
-assert.equal(xid.equals(Xid.from('9m4e2mr0ui3e8a215n4g')), true)
-assert.equal(xid.equals(Xid.from([77, 136, 225, 91, 96, 244, 134, 228, 40, 65, 45, 201])), true)
-assert.equal(xid.equals(Xid.from(Buffer.from([77, 136, 225, 91, 96, 244, 134, 228, 40, 65, 45, 201]))), true)
-assert.equal(xid.equals(Xid.from(new Uint8Array([77, 136, 225, 91, 96, 244, 134, 228, 40, 65, 45, 201]))), true)
+assert.equal(xid.equals(Xid.fromValue('9m4e2mr0ui3e8a215n4g')), true)
+assert.equal(xid.equals(Xid.fromValue([77, 136, 225, 91, 96, 244, 134, 228, 40, 65, 45, 201])), true)
+assert.equal(xid.equals(Xid.fromValue(Buffer.from([77, 136, 225, 91, 96, 244, 134, 228, 40, 65, 45, 201]))), true)
+assert.equal(xid.equals(Xid.fromValue(new Uint8Array([77, 136, 225, 91, 96, 244, 134, 228, 40, 65, 45, 201]))), true)
 ```
 
 [`xid`]:  https://github.com/rs/xid

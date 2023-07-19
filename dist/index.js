@@ -10,38 +10,38 @@ for (let i = 0; i < encoding.length; i++) {
   dec[encoding[i]] = i;
 }
 var start = getRandom3Bytes();
-var Xid = class _Xid {
+var Xid = class _Xid extends Uint8Array {
   static machineId = getRandom3Bytes();
   static pid = getPid();
   static counter = start[0] << 16 | start[1] << 8 | start[2];
-  id;
   constructor(id) {
+    super(rawLen);
     if (id == null) {
-      id = new Uint8Array(rawLen);
-      const view = new DataView(id.buffer);
+      const view = new DataView(this.buffer);
       const timestamp = Math.floor(Date.now() / 1e3);
       view.setUint32(0, timestamp);
-      id[4] = _Xid.machineId[0];
-      id[5] = _Xid.machineId[1];
-      id[6] = _Xid.machineId[2];
-      id[7] = _Xid.pid >> 8;
-      id[8] = _Xid.pid & 255;
+      this[4] = _Xid.machineId[0];
+      this[5] = _Xid.machineId[1];
+      this[6] = _Xid.machineId[2];
+      this[7] = _Xid.pid >> 8;
+      this[8] = _Xid.pid & 255;
       _Xid.counter += 1;
       if (_Xid.counter > 16777215) {
         _Xid.counter = 0;
       }
-      id[9] = _Xid.counter >> 16;
-      id[10] = _Xid.counter & 65535 >> 8;
-      id[11] = _Xid.counter & 255;
+      this[9] = _Xid.counter >> 16;
+      this[10] = _Xid.counter & 65535 >> 8;
+      this[11] = _Xid.counter & 255;
     } else if (!(id instanceof Uint8Array) || id.length !== rawLen) {
       throw new Error(errInvalidID);
+    } else {
+      this.set(id);
     }
-    this.id = id;
   }
   static default() {
     return new _Xid(new Uint8Array(rawLen).fill(0));
   }
-  static from(v) {
+  static fromValue(v) {
     if (v instanceof _Xid) {
       return v;
     }
@@ -49,7 +49,7 @@ var Xid = class _Xid {
       return _Xid.parse(v);
     }
     if (v instanceof Uint8Array && v.length === rawLen) {
-      return new _Xid(new Uint8Array(v));
+      return new _Xid(v);
     }
     if (v instanceof ArrayBuffer && v.byteLength === rawLen) {
       return new _Xid(new Uint8Array(v));
@@ -77,70 +77,73 @@ var Xid = class _Xid {
         throw new Error(errInvalidID);
       }
     }
-    this.id[11] = dec[src[17]] << 6 | dec[src[18]] << 1 | dec[src[19]] >> 4;
-    if (encoding[this.id[11] << 4 & 31] != src[19]) {
+    this[11] = dec[src[17]] << 6 | dec[src[18]] << 1 | dec[src[19]] >> 4;
+    if (encoding[this[11] << 4 & 31] != src[19]) {
       throw new Error(errInvalidID);
     }
-    this.id[10] = dec[src[16]] << 3 | dec[src[17]] >> 2;
-    this.id[9] = dec[src[14]] << 5 | dec[src[15]];
-    this.id[8] = dec[src[12]] << 7 | dec[src[13]] << 2 | dec[src[14]] >> 3;
-    this.id[7] = dec[src[11]] << 4 | dec[src[12]] >> 1;
-    this.id[6] = dec[src[9]] << 6 | dec[src[10]] << 1 | dec[src[11]] >> 4;
-    this.id[5] = dec[src[8]] << 3 | dec[src[9]] >> 2;
-    this.id[4] = dec[src[6]] << 5 | dec[src[7]];
-    this.id[3] = dec[src[4]] << 7 | dec[src[5]] << 2 | dec[src[6]] >> 3;
-    this.id[2] = dec[src[3]] << 4 | dec[src[4]] >> 1;
-    this.id[1] = dec[src[1]] << 6 | dec[src[2]] << 1 | dec[src[3]] >> 4;
-    this.id[0] = dec[src[0]] << 3 | dec[src[1]] >> 2;
+    this[10] = dec[src[16]] << 3 | dec[src[17]] >> 2;
+    this[9] = dec[src[14]] << 5 | dec[src[15]];
+    this[8] = dec[src[12]] << 7 | dec[src[13]] << 2 | dec[src[14]] >> 3;
+    this[7] = dec[src[11]] << 4 | dec[src[12]] >> 1;
+    this[6] = dec[src[9]] << 6 | dec[src[10]] << 1 | dec[src[11]] >> 4;
+    this[5] = dec[src[8]] << 3 | dec[src[9]] >> 2;
+    this[4] = dec[src[6]] << 5 | dec[src[7]];
+    this[3] = dec[src[4]] << 7 | dec[src[5]] << 2 | dec[src[6]] >> 3;
+    this[2] = dec[src[3]] << 4 | dec[src[4]] >> 1;
+    this[1] = dec[src[1]] << 6 | dec[src[2]] << 1 | dec[src[3]] >> 4;
+    this[0] = dec[src[0]] << 3 | dec[src[1]] >> 2;
   }
   encode() {
     const dst = new Uint8Array(encodedLen);
-    dst[19] = encoding[this.id[11] << 4 & 31];
-    dst[18] = encoding[this.id[11] >> 1 & 31];
-    dst[17] = encoding[this.id[11] >> 6 | this.id[10] << 2 & 31];
-    dst[16] = encoding[this.id[10] >> 3];
-    dst[15] = encoding[this.id[9] & 31];
-    dst[14] = encoding[this.id[9] >> 5 | this.id[8] << 3 & 31];
-    dst[13] = encoding[this.id[8] >> 2 & 31];
-    dst[12] = encoding[this.id[8] >> 7 | this.id[7] << 1 & 31];
-    dst[11] = encoding[this.id[7] >> 4 | this.id[6] << 4 & 31];
-    dst[10] = encoding[this.id[6] >> 1 & 31];
-    dst[9] = encoding[this.id[6] >> 6 | this.id[5] << 2 & 31];
-    dst[8] = encoding[this.id[5] >> 3];
-    dst[7] = encoding[this.id[4] & 31];
-    dst[6] = encoding[this.id[4] >> 5 | this.id[3] << 3 & 31];
-    dst[5] = encoding[this.id[3] >> 2 & 31];
-    dst[4] = encoding[this.id[3] >> 7 | this.id[2] << 1 & 31];
-    dst[3] = encoding[this.id[2] >> 4 | this.id[1] << 4 & 31];
-    dst[2] = encoding[this.id[1] >> 1 & 31];
-    dst[1] = encoding[this.id[1] >> 6 | this.id[0] << 2 & 31];
-    dst[0] = encoding[this.id[0] >> 3];
+    dst[19] = encoding[this[11] << 4 & 31];
+    dst[18] = encoding[this[11] >> 1 & 31];
+    dst[17] = encoding[this[11] >> 6 | this[10] << 2 & 31];
+    dst[16] = encoding[this[10] >> 3];
+    dst[15] = encoding[this[9] & 31];
+    dst[14] = encoding[this[9] >> 5 | this[8] << 3 & 31];
+    dst[13] = encoding[this[8] >> 2 & 31];
+    dst[12] = encoding[this[8] >> 7 | this[7] << 1 & 31];
+    dst[11] = encoding[this[7] >> 4 | this[6] << 4 & 31];
+    dst[10] = encoding[this[6] >> 1 & 31];
+    dst[9] = encoding[this[6] >> 6 | this[5] << 2 & 31];
+    dst[8] = encoding[this[5] >> 3];
+    dst[7] = encoding[this[4] & 31];
+    dst[6] = encoding[this[4] >> 5 | this[3] << 3 & 31];
+    dst[5] = encoding[this[3] >> 2 & 31];
+    dst[4] = encoding[this[3] >> 7 | this[2] << 1 & 31];
+    dst[3] = encoding[this[2] >> 4 | this[1] << 4 & 31];
+    dst[2] = encoding[this[1] >> 1 & 31];
+    dst[1] = encoding[this[1] >> 6 | this[0] << 2 & 31];
+    dst[0] = encoding[this[0] >> 3];
     return textDecoder.decode(dst);
   }
   timestamp() {
-    return new DataView(this.id.buffer).getUint32(0);
+    return new DataView(this.buffer).getUint32(0);
   }
   machine() {
-    return this.id.slice(4, 7);
+    return new Uint8Array(this.buffer, 4, 3);
   }
   pid() {
-    return this.id[7] << 8 | this.id[8];
+    return this[7] << 8 | this[8];
   }
   counter() {
-    return this.id[9] << 16 | this.id[10] << 8 | this.id[11];
+    return this[9] << 16 | this[10] << 8 | this[11];
   }
   isZero() {
-    return this.id.every((byte) => byte === 0);
+    return super.every((byte) => byte === 0);
   }
   toString() {
     return this.encode();
   }
   toBytes() {
-    return this.id;
+    return new Uint8Array(this.buffer, 0, rawLen);
+  }
+  toJSON() {
+    return this.encode();
   }
   equals(xid) {
     for (let i = 0; i < rawLen; i++) {
-      if (this.id[i] !== xid.id[i]) {
+      if (this[i] !== xid[i]) {
         return false;
       }
     }
