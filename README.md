@@ -47,6 +47,34 @@ assert.equal(xid.equals(Xid.fromValue(Buffer.from([77, 136, 225, 91, 96, 244, 13
 assert.equal(xid.equals(Xid.fromValue(new Uint8Array([77, 136, 225, 91, 96, 244, 134, 228, 40, 65, 45, 201]))), true)
 ```
 
+## Encode & Decode With JSON and CBOR
+
+https://github.com/yiwen-ai/xid-ts/blob/main/src/index.test.ts#L70
+
+```ts
+import { decode, encode } from 'cbor-x'
+import { Xid } from 'xid-ts'
+
+const xid = Xid.fromValue('9m4e2mr0ui3e8a215n4g')
+const obj = {
+  id: xid,
+  name: 'yiwen'
+}
+const json = JSON.stringify(obj)
+assert.equal(json, '{"id":"9m4e2mr0ui3e8a215n4g","name":"yiwen"}')
+const obj1 = JSON.parse(json)
+assert.isTrue(xid.equals(Xid.fromValue(obj1.id)))
+
+const data = encode(obj)
+assert.equal(Buffer.from(data).toString('hex'), 'b900026269644c4d88e15b60f486e428412dc9646e616d6565796977656e')
+// https://cbor.me/
+// {"id": h'4D88E15B60F486E428412DC9', "name": "yiwen"}
+
+const obj2 = decode(data)
+assert.isTrue(xid.equals(Xid.fromValue(obj2.id)))
+```
+
+
 [`xid`]:  https://github.com/rs/xid
 [object-id]: https://docs.mongodb.org/manual/reference/object-id/
 
