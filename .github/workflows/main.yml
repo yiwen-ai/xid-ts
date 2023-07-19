@@ -2,6 +2,8 @@ name: 'npm test && publish'
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
 
@@ -17,7 +19,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '20.x'
-          cache: 'npm'
+          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
       - run: |
           npm install -g pnpm
