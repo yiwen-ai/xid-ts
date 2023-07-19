@@ -15,6 +15,7 @@ jobs:
       packages: write
 
     steps:
+      - run: npm install -g pnpm
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
@@ -22,7 +23,6 @@ jobs:
           cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
       - run: |
-          npm install -g pnpm
           pnpm install
           pnpm lint
           pnpm test
