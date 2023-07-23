@@ -5,9 +5,9 @@
 	],
 	"exclude": [
 		"src/**/*.test.ts",
-		"node_modules/**/*",
-		"coverage/**/*",
-		"dist/**/*",
-		"debug/**/*"
+		"node_modules",
+		"coverage",
+		"dist",
+		"debug"
 	]
 }

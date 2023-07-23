@@ -2,7 +2,7 @@
 // See the file LICENSE for licensing terms.
 
 import { assert, describe, it } from 'vitest'
-import { decode, encode } from 'cbor-x'
+import { decode, encode } from 'cborg'
 import { Xid } from './index'
 
 describe('xid', () => {
@@ -79,7 +79,7 @@ describe('xid', () => {
     assert.isTrue(xid.equals(Xid.fromValue(obj1.id)))
 
     const data = encode(obj)
-    assert.equal(Buffer.from(data).toString('hex'), 'b900026269644c4d88e15b60f486e428412dc9646e616d6565796977656e')
+    assert.equal(Buffer.from(data).toString('hex'), 'a26269644c4d88e15b60f486e428412dc9646e616d6565796977656e')
     // https://cbor.me/
     // {"id": h'4D88E15B60F486E428412DC9', "name": "yiwen"}
 
