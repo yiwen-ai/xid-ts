@@ -1,6 +1,8 @@
 // (c) 2023-present, Yiwen AI Limited. All rights reserved.
 // See the file LICENSE for licensing terms.
 
+import crypto from 'node:crypto'
+
 const encodedLen = 20 // string encoded len
 const rawLen = 12 // binary raw len
 const errInvalidID = "xid: invalid ID"
