@@ -9,6 +9,12 @@ var dec = new Uint8Array(256).fill(255);
 for (let i = 0; i < encoding.length; i++) {
   dec[encoding[i]] = i;
 }
+var cry;
+if (typeof crypto === "object" && crypto.getRandomValues != null) {
+  cry = crypto;
+} else {
+  cry = await import("crypto");
+}
 var start = getRandom3Bytes();
 var Xid = class _Xid extends Uint8Array {
   static machineId = getRandom3Bytes();
@@ -151,13 +157,13 @@ var Xid = class _Xid extends Uint8Array {
   }
 };
 function getRandom3Bytes() {
-  return crypto.getRandomValues(new Uint8Array(3));
+  return cry.getRandomValues(new Uint8Array(3));
 }
 function getPid() {
   if (typeof process === "object" && process.pid > 0) {
     return process.pid & 65535;
   }
-  const buf = crypto.getRandomValues(new Uint8Array(2));
+  const buf = cry.getRandomValues(new Uint8Array(2));
   return buf[0] << 8 | buf[1];
 }
 export {

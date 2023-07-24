@@ -12,6 +12,13 @@ for (let i = 0; i < encoding.length; i++) {
   dec[encoding[i]] = i
 }
 
+let cry: Crypto
+if (typeof crypto === 'object' && crypto.getRandomValues != null) {
+  cry = crypto
+} else {
+  cry = await import('node:crypto') as Crypto
+}
+
 const start = getRandom3Bytes()
 
 export class Xid extends Uint8Array {
@@ -187,7 +194,7 @@ export class Xid extends Uint8Array {
 }
 
 function getRandom3Bytes(): Uint8Array {
-  return crypto.getRandomValues(new Uint8Array(3))
+  return cry.getRandomValues(new Uint8Array(3))
 }
 
 function getPid(): number {
@@ -195,6 +202,6 @@ function getPid(): number {
     return process.pid & 0xFFFF
   }
 
-  const buf = crypto.getRandomValues(new Uint8Array(2))
+  const buf = cry.getRandomValues(new Uint8Array(2))
   return buf[0] << 8 | buf[1]
 }
