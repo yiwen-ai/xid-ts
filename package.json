@@ -1,7 +1,7 @@
 {
   "name": "xid-ts",
   "type": "module",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "author": "0xZensh <txr1883@gmail.com>",
   "description": "xid is a globally unique id generator thought for the web. A Typescript port of https://github.com/rs/xid.",
   "license": "MIT",
@@ -13,35 +13,44 @@
   "files": [
     "dist",
     "package.json",
+    "pnpm-lock.yaml",
     "LICENSE",
     "README.md"
   ],
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "browser": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "browser": {
+    "node:crypto": false
+  },
   "engines": {
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "npm run clean && npm run build:tsup",
-    "build:tsup": "tsup src/index.ts --dts --sourcemap --format esm",
-    "check": "tsc --noEmit -p tsconfig.json",
+    "build": "npm run clean && tsc -p tsconfig.json",
     "clean": "rm -rf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "vitest src --coverage --run"
   },
   "devDependencies": {
-    "@types/node": "^18.19.3",
-    "@typescript-eslint/eslint-plugin": "^6.13.2",
-    "@typescript-eslint/parser": "^6.13.2",
-    "@vitest/coverage-v8": "^0.33.0",
-    "cborg": "^2.0.5",
-    "eslint": "^8.55.0",
-    "eslint-plugin-import": "^2.29.0",
-    "tsup": "^7.2.0",
+    "@types/node": "^20.11.4",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "@vitest/coverage-v8": "^1.2.0",
+    "cborg": "^4.0.8",
+    "eslint": "^8.56.0",
+    "eslint-plugin-import": "^2.29.1",
     "typescript": "^5.3.3",
-    "vitest": "^0.33.0"
+    "vitest": "^1.2.0"
   },
+  "dependencies": {},
   "keywords": [
     "xid",
     "unique",

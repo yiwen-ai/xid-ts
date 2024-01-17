@@ -130,3 +130,4 @@ storage
 .yarn/install-state.gz
 .pnp.*
 debug
+dist

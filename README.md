@@ -1,5 +1,9 @@
 # xid-ts
 
+[![CI](https://github.com/yiwen-ai/xid-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/yiwen-ai/xid-ts/actions/workflows/ci.yml)
+[![NPM version](http://img.shields.io/npm/v/xid-ts.svg)](https://www.npmjs.com/package/xid-ts)
+[![License](http://img.shields.io/badge/license-mit-blue.svg?style=flat-square)](https://raw.githubusercontent.com/yiwen-ai/xid-ts/main/LICENSE)
+
 Globally unique sortable id generator. A Typescript port of https://github.com/rs/xid.
 
 The binary representation is compatible with the Mongo DB 12-byte [ObjectId][object-id].
