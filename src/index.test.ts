@@ -29,8 +29,8 @@ describe('xid', () => {
     assert.isFalse(id1.equals(id2))
     assert.isTrue(id1.timestamp() >= now)
     assert.isTrue(id2.timestamp() >= now)
-    assert.equal(id1.pid(), process.pid)
-    assert.equal(id2.pid(), process.pid)
+    assert.equal(id1.pid(), globalThis.process.pid & 0xffff)
+    assert.equal(id2.pid(), globalThis.process.pid & 0xffff)
     // assert.equal(id2.machine().toString(), id1.machine().toString())
   })
 
