@@ -1,0 +1,7 @@
+{
+  "htmlWhitespaceSensitivity": "strict",
+  "quoteProps": "preserve",
+  "semi": false,
+  "trailingComma": "none",
+  "singleQuote": true
+}

@@ -1,4 +1,4 @@
-name: 'npm test && publish'
+name: 'CI'
 
 on:
   push:

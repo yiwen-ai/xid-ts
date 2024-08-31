@@ -13,7 +13,10 @@ describe('xid', () => {
     assert.equal(xid.timestamp(), 0)
     assert.equal(xid.pid(), 0)
     assert.equal(xid.counter(), 0)
-    assert.equal(xid.toBytes().every(v => v === 0), true)
+    assert.equal(
+      xid.toBytes().every((v) => v === 0),
+      true
+    )
     assert.equal(xid.machine().toString(), '0,0,0')
     assert.equal(xid.equals(Xid.parse('00000000000000000000')), true)
     assert.equal(xid.equals(Xid.default()), true)
@@ -56,15 +59,49 @@ describe('xid', () => {
     // console.log(xid.counter())
     assert.isTrue(xid == Xid.fromValue(xid))
     assert.isTrue(xid.equals(Xid.fromValue(xid)))
-    assert.isTrue(xid.equals(Xid.fromValue([0x4d, 0x88, 0xe1, 0x5b, 0x60, 0xf4, 0x86, 0xe4, 0x28, 0x41, 0x2d, 0xc9])))
-    assert.isTrue(xid.equals(Xid.fromValue(new Uint8Array([0x4d, 0x88, 0xe1, 0x5b, 0x60, 0xf4, 0x86, 0xe4, 0x28, 0x41, 0x2d, 0xc9]))))
-    assert.isTrue(xid.equals(Xid.fromValue(Buffer.from([0x4d, 0x88, 0xe1, 0x5b, 0x60, 0xf4, 0x86, 0xe4, 0x28, 0x41, 0x2d, 0xc9]))))
+    assert.isTrue(
+      xid.equals(
+        Xid.fromValue([
+          0x4d, 0x88, 0xe1, 0x5b, 0x60, 0xf4, 0x86, 0xe4, 0x28, 0x41, 0x2d, 0xc9
+        ])
+      )
+    )
+    assert.isTrue(
+      xid.equals(
+        Xid.fromValue(
+          new Uint8Array([
+            0x4d, 0x88, 0xe1, 0x5b, 0x60, 0xf4, 0x86, 0xe4, 0x28, 0x41, 0x2d,
+            0xc9
+          ])
+        )
+      )
+    )
+    assert.isTrue(
+      xid.equals(
+        Xid.fromValue(
+          Buffer.from([
+            0x4d, 0x88, 0xe1, 0x5b, 0x60, 0xf4, 0x86, 0xe4, 0x28, 0x41, 0x2d,
+            0xc9
+          ])
+        )
+      )
+    )
 
     assert.throws(() => Xid.fromValue(''))
     assert.throws(() => Xid.fromValue('00000000000000jarvis'))
     assert.throws(() => Xid.fromValue('0000000000000000000000000000'))
-    assert.throws(() => Xid.fromValue([0x4d, 0x88, 0xe1, 0x5b, 0x60, 0xf4, 0x86, 0xe4, 0x28, 0x41, 0x2d, 1999]))
-    assert.throws(() => Xid.fromValue(new Uint8Array([0x4d, 0x88, 0xe1, 0x5b, 0x60, 0xf4, 0x86, 0xe4, 0x28, 0x41, 0x2d])))
+    assert.throws(() =>
+      Xid.fromValue([
+        0x4d, 0x88, 0xe1, 0x5b, 0x60, 0xf4, 0x86, 0xe4, 0x28, 0x41, 0x2d, 1999
+      ])
+    )
+    assert.throws(() =>
+      Xid.fromValue(
+        new Uint8Array([
+          0x4d, 0x88, 0xe1, 0x5b, 0x60, 0xf4, 0x86, 0xe4, 0x28, 0x41, 0x2d
+        ])
+      )
+    )
   })
 
   it('json and cbor', () => {
@@ -79,7 +116,10 @@ describe('xid', () => {
     assert.isTrue(xid.equals(Xid.fromValue(obj1.id)))
 
     const data = encode(obj)
-    assert.equal(Buffer.from(data).toString('hex'), 'a26269644c4d88e15b60f486e428412dc9646e616d6565796977656e')
+    assert.equal(
+      Buffer.from(data).toString('hex'),
+      'a26269644c4d88e15b60f486e428412dc9646e616d6565796977656e'
+    )
     // https://cbor.me/
     // {"id": h'4D88E15B60F486E428412DC9', "name": "yiwen"}
 

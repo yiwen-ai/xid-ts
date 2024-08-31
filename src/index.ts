@@ -3,28 +3,26 @@
 
 const encodedLen = 20 // string encoded len
 const rawLen = 12 // binary raw len
-const errInvalidID = "xid: invalid ID"
+const errInvalidID = 'xid: invalid ID'
 const textEncoder = new TextEncoder()
 const textDecoder = new TextDecoder()
 const encoding = textEncoder.encode('0123456789abcdefghijklmnopqrstuv')
-const dec = new Uint8Array(256).fill(0xFF)
+const dec = new Uint8Array(256).fill(0xff)
 for (let i = 0; i < encoding.length; i++) {
   dec[encoding[i]] = i
 }
 
-let cry: Crypto
-if (typeof crypto === 'object' && crypto.getRandomValues != null) {
-  cry = crypto
-} else {
-  cry = await import('node:crypto') as Crypto
-}
+const crypto_0 =
+  typeof globalThis === 'object' && 'crypto' in globalThis
+    ? globalThis.crypto
+    : undefined
 
 const start = getRandom3Bytes()
 
 export class Xid extends Uint8Array {
   private static machineId = getRandom3Bytes()
   private static pid = getPid()
-  private static counter = start[0] << 16 | start[1] << 8 | start[2]
+  private static counter = (start[0] << 16) | (start[1] << 8) | start[2]
 
   constructor(id?: Uint8Array) {
     super(rawLen)
@@ -38,17 +36,16 @@ export class Xid extends Uint8Array {
       this[5] = Xid.machineId[1]
       this[6] = Xid.machineId[2]
       this[7] = Xid.pid >> 8
-      this[8] = Xid.pid & 0x00FF
+      this[8] = Xid.pid & 0x00ff
 
       Xid.counter += 1
-      if (Xid.counter > 0xFFFFFF) {
+      if (Xid.counter > 0xffffff) {
         Xid.counter = 0
       }
 
       this[9] = Xid.counter >> 16
-      this[10] = Xid.counter & 0x00FFFF >> 8
-      this[11] = Xid.counter & 0x0000FF
-
+      this[10] = Xid.counter & (0x00ffff >> 8)
+      this[11] = Xid.counter & 0x0000ff
     } else if (!(id instanceof Uint8Array) || id.length !== rawLen) {
       throw new Error(errInvalidID)
     } else {
@@ -77,7 +74,11 @@ export class Xid extends Uint8Array {
       return new Xid(new Uint8Array(v))
     }
 
-    if (Array.isArray(v) && v.length === rawLen && v.every(byte => typeof byte === 'number' && byte >= 0 && byte <= 255)) {
+    if (
+      Array.isArray(v) &&
+      v.length === rawLen &&
+      v.every((byte) => typeof byte === 'number' && byte >= 0 && byte <= 255)
+    ) {
       return new Xid(new Uint8Array(v))
     }
 
@@ -101,51 +102,51 @@ export class Xid extends Uint8Array {
     }
 
     for (const c of src) {
-      if (dec[c] == 0xFF) {
+      if (dec[c] == 0xff) {
         throw new Error(errInvalidID)
       }
     }
 
-    this[11] = dec[src[17]] << 6 | dec[src[18]] << 1 | dec[src[19]] >> 4
-    if (encoding[(this[11] << 4) & 0x1F] != src[19]) {
+    this[11] = (dec[src[17]] << 6) | (dec[src[18]] << 1) | (dec[src[19]] >> 4)
+    if (encoding[(this[11] << 4) & 0x1f] != src[19]) {
       throw new Error(errInvalidID)
     }
 
-    this[10] = dec[src[16]] << 3 | dec[src[17]] >> 2
-    this[9] = dec[src[14]] << 5 | dec[src[15]]
-    this[8] = dec[src[12]] << 7 | dec[src[13]] << 2 | dec[src[14]] >> 3
-    this[7] = dec[src[11]] << 4 | dec[src[12]] >> 1
-    this[6] = dec[src[9]] << 6 | dec[src[10]] << 1 | dec[src[11]] >> 4
-    this[5] = dec[src[8]] << 3 | dec[src[9]] >> 2
-    this[4] = dec[src[6]] << 5 | dec[src[7]]
-    this[3] = dec[src[4]] << 7 | dec[src[5]] << 2 | dec[src[6]] >> 3
-    this[2] = dec[src[3]] << 4 | dec[src[4]] >> 1
-    this[1] = dec[src[1]] << 6 | dec[src[2]] << 1 | dec[src[3]] >> 4
-    this[0] = dec[src[0]] << 3 | dec[src[1]] >> 2
+    this[10] = (dec[src[16]] << 3) | (dec[src[17]] >> 2)
+    this[9] = (dec[src[14]] << 5) | dec[src[15]]
+    this[8] = (dec[src[12]] << 7) | (dec[src[13]] << 2) | (dec[src[14]] >> 3)
+    this[7] = (dec[src[11]] << 4) | (dec[src[12]] >> 1)
+    this[6] = (dec[src[9]] << 6) | (dec[src[10]] << 1) | (dec[src[11]] >> 4)
+    this[5] = (dec[src[8]] << 3) | (dec[src[9]] >> 2)
+    this[4] = (dec[src[6]] << 5) | dec[src[7]]
+    this[3] = (dec[src[4]] << 7) | (dec[src[5]] << 2) | (dec[src[6]] >> 3)
+    this[2] = (dec[src[3]] << 4) | (dec[src[4]] >> 1)
+    this[1] = (dec[src[1]] << 6) | (dec[src[2]] << 1) | (dec[src[3]] >> 4)
+    this[0] = (dec[src[0]] << 3) | (dec[src[1]] >> 2)
   }
 
   encode(): string {
     const dst = new Uint8Array(encodedLen)
 
-    dst[19] = encoding[(this[11] << 4) & 0x1F]
-    dst[18] = encoding[(this[11] >> 1) & 0x1F]
-    dst[17] = encoding[(this[11] >> 6) | (this[10] << 2) & 0x1F]
+    dst[19] = encoding[(this[11] << 4) & 0x1f]
+    dst[18] = encoding[(this[11] >> 1) & 0x1f]
+    dst[17] = encoding[(this[11] >> 6) | ((this[10] << 2) & 0x1f)]
     dst[16] = encoding[this[10] >> 3]
-    dst[15] = encoding[this[9] & 0x1F]
-    dst[14] = encoding[(this[9] >> 5) | (this[8] << 3) & 0x1F]
-    dst[13] = encoding[(this[8] >> 2) & 0x1F]
-    dst[12] = encoding[this[8] >> 7 | (this[7] << 1) & 0x1F]
-    dst[11] = encoding[(this[7] >> 4) | (this[6] << 4) & 0x1F]
-    dst[10] = encoding[(this[6] >> 1) & 0x1F]
-    dst[9] = encoding[(this[6] >> 6) | (this[5] << 2) & 0x1F]
+    dst[15] = encoding[this[9] & 0x1f]
+    dst[14] = encoding[(this[9] >> 5) | ((this[8] << 3) & 0x1f)]
+    dst[13] = encoding[(this[8] >> 2) & 0x1f]
+    dst[12] = encoding[(this[8] >> 7) | ((this[7] << 1) & 0x1f)]
+    dst[11] = encoding[(this[7] >> 4) | ((this[6] << 4) & 0x1f)]
+    dst[10] = encoding[(this[6] >> 1) & 0x1f]
+    dst[9] = encoding[(this[6] >> 6) | ((this[5] << 2) & 0x1f)]
     dst[8] = encoding[this[5] >> 3]
-    dst[7] = encoding[this[4] & 0x1F]
-    dst[6] = encoding[this[4] >> 5 | (this[3] << 3) & 0x1F]
-    dst[5] = encoding[(this[3] >> 2) & 0x1F]
-    dst[4] = encoding[this[3] >> 7 | (this[2] << 1) & 0x1F]
-    dst[3] = encoding[(this[2] >> 4) | (this[1] << 4) & 0x1F]
-    dst[2] = encoding[(this[1] >> 1) & 0x1F]
-    dst[1] = encoding[(this[1] >> 6) | (this[0] << 2) & 0x1F]
+    dst[7] = encoding[this[4] & 0x1f]
+    dst[6] = encoding[(this[4] >> 5) | ((this[3] << 3) & 0x1f)]
+    dst[5] = encoding[(this[3] >> 2) & 0x1f]
+    dst[4] = encoding[(this[3] >> 7) | ((this[2] << 1) & 0x1f)]
+    dst[3] = encoding[(this[2] >> 4) | ((this[1] << 4) & 0x1f)]
+    dst[2] = encoding[(this[1] >> 1) & 0x1f]
+    dst[1] = encoding[(this[1] >> 6) | ((this[0] << 2) & 0x1f)]
     dst[0] = encoding[this[0] >> 3]
 
     return textDecoder.decode(dst)
@@ -160,15 +161,15 @@ export class Xid extends Uint8Array {
   }
 
   pid(): number {
-    return this[7] << 8 | this[8]
+    return (this[7] << 8) | this[8]
   }
 
   counter(): number {
-    return this[9] << 16 | this[10] << 8 | this[11]
+    return (this[9] << 16) | (this[10] << 8) | this[11]
   }
 
   isZero(): boolean {
-    return super.every(byte => byte === 0)
+    return super.every((byte) => byte === 0)
   }
 
   toString(): string {
@@ -194,14 +195,14 @@ export class Xid extends Uint8Array {
 }
 
 function getRandom3Bytes(): Uint8Array {
-  return cry.getRandomValues(new Uint8Array(3))
+  return crypto_0!.getRandomValues(new Uint8Array(3))
 }
 
 function getPid(): number {
-  if (typeof process === 'object' && process.pid > 0) {
-    return process.pid & 0xFFFF
+  if (typeof globalThis === 'object' && 'process' in globalThis) {
+    return ((globalThis as any).process as any).pid & 0xffff
   }
 
-  const buf = cry.getRandomValues(new Uint8Array(2))
-  return buf[0] << 8 | buf[1]
+  const buf = crypto_0!.getRandomValues(new Uint8Array(2))
+  return (buf[0] << 8) | buf[1]
 }

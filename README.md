@@ -1,4 +1,4 @@
-# xid-ts
+# `xid-ts`
 
 [![CI](https://github.com/yiwen-ai/xid-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/yiwen-ai/xid-ts/actions/workflows/ci.yml)
 [![NPM version](http://img.shields.io/npm/v/xid-ts.svg)](https://www.npmjs.com/package/xid-ts)
@@ -85,4 +85,4 @@ assert.isTrue(xid.equals(Xid.fromValue(obj2.id)))
 ## License
 Copyright © 2023-present [Yiwen AI](https://github.com/yiwen-ai).
 
-yiwen-ai/xid-ts is licensed under the MIT License. See [LICENSE](LICENSE) for the full license text.
+`yiwen-ai/xid-ts` is licensed under the MIT License. See [LICENSE](LICENSE) for the full license text.
