@@ -27,7 +27,9 @@ npm i xid-ts --save
 
 ## Examples
 
-```js
+### Create and Parse Xid
+
+```ts
 import { Xid } from 'xid-ts'
 
 const defaultXid = Xid.default()
@@ -51,7 +53,7 @@ assert.equal(xid.equals(Xid.fromValue(Buffer.from([77, 136, 225, 91, 96, 244, 13
 assert.equal(xid.equals(Xid.fromValue(new Uint8Array([77, 136, 225, 91, 96, 244, 134, 228, 40, 65, 45, 201]))), true)
 ```
 
-## Encode & Decode With JSON and CBOR
+### Encode & Decode With JSON and CBOR
 
 https://github.com/yiwen-ai/xid-ts/blob/main/src/index.test.ts#L70
 
@@ -78,6 +80,35 @@ const obj2 = decode(data)
 assert.isTrue(xid.equals(Xid.fromValue(obj2.id)))
 ```
 
+### Cloudflare Workers
+
+```ts
+import { DurableObject } from "cloudflare:workers"
+import { Xid, newState, type XidState } from 'xid-ts'
+
+export class GlobalState extends DurableObject {
+	#xidState: XidState = newState()
+
+	constructor(ctx: DurableObjectState, env: Env) {
+		super(ctx, env)
+	}
+
+  xid(): Xid {
+		return new Xid(undefined, this.#xidState)
+	}
+}
+
+export default {
+	async fetch(request, env, ctx): Promise<Response> {
+	  const stub = env.GLOBAL_STATE.getByName("global")
+    // _id is not Xid instance because it comes from DurableObject RPC serialization
+    const _id = await stub.xid()
+	  const id = new Xid(_id)
+		return new Response(JSON.stringify({id}), { status: 200 })
+    // {"id":"d4amdocsodcmnao0bddg"}
+	},
+} satisfies ExportedHandler<Env>
+```
 
 [`xid`]:  https://github.com/rs/xid
 [object-id]: https://docs.mongodb.org/manual/reference/object-id/

@@ -42,15 +42,26 @@ export interface XidState {
  * @returns A new XidState.
  */
 export function newState(): XidState {
-  const start = getRandom3Bytes()
+  const machineId = getRandom3Bytes()
   return {
-    machineId: getRandom3Bytes(),
+    machineId,
     pid: getPid(),
-    counter: (start[0] << 16) | (start[1] << 8) | start[2]
+    counter: machineId[2]
   }
 }
 
-const defaultState = newState()
+let defaultState: XidState
+
+try {
+  // can not get random values in cloudflare workers during module initialization
+  defaultState = newState()
+} catch {
+  defaultState = {
+    machineId: new Uint8Array(3),
+    pid: 0,
+    counter: 0
+  }
+}
 
 /**
  * Xid is a globally unique sortable ID.
