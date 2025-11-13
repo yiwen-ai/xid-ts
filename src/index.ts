@@ -15,16 +15,65 @@ for (let i = 0; i < encoding.length; i++) {
 const crypto_0 =
   typeof globalThis === 'object' && 'crypto' in globalThis
     ? globalThis.crypto
-    : undefined
+    : typeof crypto === 'object' && 'getRandomValues' in crypto // cloudflare workers
+      ? crypto
+      : undefined
 
-const start = getRandom3Bytes()
+/**
+ * XidState holds the state required for generating new XIDs.
+ */
+export interface XidState {
+  /**
+   * A 3-byte machine identifier.
+   */
+  machineId: Uint8Array // 3 bytes
+  /**
+   * A 2-byte process identifier.
+   */
+  pid: number
+  /**
+   * A 3-byte counter, initialized to a random value.
+   */
+  counter: number
+}
 
+/**
+ * Creates a new XidState.
+ * @returns A new XidState.
+ */
+export function newState(): XidState {
+  const start = getRandom3Bytes()
+  return {
+    machineId: getRandom3Bytes(),
+    pid: getPid(),
+    counter: (start[0] << 16) | (start[1] << 8) | start[2]
+  }
+}
+
+const defaultState = newState()
+
+/**
+ * Xid is a globally unique sortable ID.
+ * It is a Typescript port of https://github.com/rs/xid.
+ * The binary representation is compatible with the Mongo DB 12-byte ObjectId.
+ * The value consists of:
+ * - a 4-byte timestamp value in seconds since the Unix epoch
+ * - a 3-byte value based on the machine identifier
+ * - a 2-byte value based on the process id
+ * - a 3-byte incrementing counter, initialized to a random value
+ *
+ * The string representation is 20 bytes, using a base32 hex variant with characters `[0-9a-v]`
+ * to retain the sortable property of the id.
+ */
 export class Xid extends Uint8Array {
-  private static machineId = getRandom3Bytes()
-  private static pid = getPid()
-  private static counter = (start[0] << 16) | (start[1] << 8) | start[2]
-
-  constructor(id?: Uint8Array) {
+  /**
+   * Creates a new Xid.
+   * If `id` is not provided, a new ID is generated.
+   * @param id - An optional 12-byte Uint8Array to use as the ID.
+   * @param state - The optional state to use for generating a new ID. In most cases, the default state is sufficient.
+   * But for Cloudflare Workers, you may want to create and manage your own state using `newState()` and hold it with DurableObject.
+   */
+  constructor(id?: Uint8Array, state: XidState = defaultState) {
     super(rawLen)
 
     if (id == null) {
@@ -32,20 +81,19 @@ export class Xid extends Uint8Array {
       const timestamp = Math.floor(Date.now() / 1000)
       view.setUint32(0, timestamp)
 
-      this[4] = Xid.machineId[0]
-      this[5] = Xid.machineId[1]
-      this[6] = Xid.machineId[2]
-      this[7] = Xid.pid >> 8
-      this[8] = Xid.pid & 0x00ff
-
-      Xid.counter += 1
-      if (Xid.counter > 0xffffff) {
-        Xid.counter = 0
+      this[4] = state.machineId[0]
+      this[5] = state.machineId[1]
+      this[6] = state.machineId[2]
+      this[7] = state.pid >> 8
+      this[8] = state.pid & 0x00ff
+      state.counter += 1
+      if (state.counter > 0xffffff) {
+        state.counter = 0
       }
 
-      this[9] = Xid.counter >> 16
-      this[10] = Xid.counter & (0x00ffff >> 8)
-      this[11] = Xid.counter & 0x0000ff
+      this[9] = state.counter >> 16
+      this[10] = state.counter & (0x00ffff >> 8)
+      this[11] = state.counter & 0x0000ff
     } else if (!(id instanceof Uint8Array) || id.length !== rawLen) {
       throw new Error(errInvalidID)
     } else {
@@ -53,10 +101,22 @@ export class Xid extends Uint8Array {
     }
   }
 
+  /**
+   * Returns a zero (nil) Xid.
+   * A zero Xid is not valid.
+   * @returns A zero Xid.
+   */
   static default(): Xid {
     return new Xid(new Uint8Array(rawLen).fill(0))
   }
 
+  /**
+   * Creates an Xid from a value.
+   * The value can be an Xid, a string, an ArrayBuffer, a Uint8Array, or an array of numbers.
+   * @param v - The value to create the Xid from.
+   * @returns A new Xid.
+   * @throws If the value is invalid.
+   */
   static fromValue(v: Xid | string | ArrayBuffer | Uint8Array | number[]): Xid {
     if (v instanceof Xid) {
       return v
@@ -85,6 +145,12 @@ export class Xid extends Uint8Array {
     throw new Error(errInvalidID)
   }
 
+  /**
+   * Parses a string representation of an Xid.
+   * @param id - The 20-byte string representation of the Xid.
+   * @returns A new Xid.
+   * @throws If the string is not a valid Xid.
+   */
   static parse(id: string): Xid {
     if (id.length !== encodedLen) {
       throw new Error(errInvalidID)
@@ -125,6 +191,10 @@ export class Xid extends Uint8Array {
     this[0] = (dec[src[0]] << 3) | (dec[src[1]] >> 2)
   }
 
+  /**
+   * Encodes the Xid into a 20-byte string representation.
+   * @returns The string representation of the Xid.
+   */
   encode(): string {
     const dst = new Uint8Array(encodedLen)
 
@@ -152,38 +222,77 @@ export class Xid extends Uint8Array {
     return textDecoder.decode(dst)
   }
 
+  /**
+   * Returns the timestamp part of the Xid.
+   * @returns The timestamp in seconds since the Unix epoch.
+   */
   timestamp(): number {
     return new DataView(this.buffer).getUint32(0)
   }
 
+  /**
+   * Returns the machine identifier part of the Xid.
+   * @returns A 3-byte Uint8Array representing the machine identifier.
+   */
   machine(): Uint8Array {
     return new Uint8Array(this.buffer, 4, 3)
   }
 
+  /**
+   * Returns the process identifier part of the Xid.
+   * @returns The 2-byte process identifier.
+   */
   pid(): number {
     return (this[7] << 8) | this[8]
   }
 
+  /**
+   * Returns the counter part of the Xid.
+   * @returns The 3-byte counter.
+   */
   counter(): number {
     return (this[9] << 16) | (this[10] << 8) | this[11]
   }
 
+  /**
+   * Checks if the Xid is zero (nil).
+   * @returns True if the Xid is zero, false otherwise.
+   */
   isZero(): boolean {
     return super.every((byte) => byte === 0)
   }
 
+  /**
+   * Returns the string representation of the Xid.
+   * This is an alias for `encode()`.
+   * @returns The 20-byte string representation of the Xid.
+   */
   toString(): string {
     return this.encode()
   }
 
+  /**
+   * Returns the raw byte representation of the Xid.
+   * @returns A 12-byte Uint8Array.
+   */
   toBytes(): Uint8Array {
     return new Uint8Array(this.buffer, 0, rawLen)
   }
 
+  /**
+   * Returns the string representation of the Xid for JSON serialization.
+   * This is an alias for `encode()`.
+   * @returns The 20-byte string representation of the Xid.
+   */
   toJSON(): string {
     return this.encode()
   }
 
+  /**
+   * Checks if this Xid is equal to another Xid.
+   * @param xid - The Xid to compare with.
+   * @returns True if the Xids are equal, false otherwise.
+   */
   equals(xid: Xid): boolean {
     for (let i = 0; i < rawLen; i++) {
       if (this[i] !== xid[i]) {

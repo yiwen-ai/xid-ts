@@ -1,7 +1,7 @@
 {
   "name": "xid-ts",
   "type": "module",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "author": "0xZensh <txr1883@gmail.com>",
   "description": "xid is a globally unique id generator thought for the web. A Typescript port of https://github.com/rs/xid.",
   "license": "MIT",
