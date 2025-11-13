@@ -87,26 +87,26 @@ import { DurableObject } from "cloudflare:workers"
 import { Xid, newState, type XidState } from 'xid-ts'
 
 export class GlobalState extends DurableObject {
-	#xidState: XidState = newState()
+  #xidState: XidState = newState()
 
-	constructor(ctx: DurableObjectState, env: Env) {
-		super(ctx, env)
-	}
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env)
+  }
 
   xid(): Xid {
-		return new Xid(undefined, this.#xidState)
-	}
+    return new Xid(undefined, this.#xidState)
+  }
 }
 
 export default {
-	async fetch(request, env, ctx): Promise<Response> {
-	  const stub = env.GLOBAL_STATE.getByName("global")
+  async fetch(request, env, ctx): Promise<Response> {
+    const stub = env.GLOBAL_STATE.getByName("global")
     // _id is not Xid instance because it comes from DurableObject RPC serialization
     const _id = await stub.xid()
-	  const id = new Xid(_id)
-		return new Response(JSON.stringify({id}), { status: 200 })
+    const id = new Xid(_id)
+    return new Response(JSON.stringify({id}), { status: 200 })
     // {"id":"d4amdocsodcmnao0bddg"}
-	},
+  },
 } satisfies ExportedHandler<Env>
 ```
 
