@@ -126,4 +126,20 @@ describe('xid', () => {
     const obj2 = decode(data)
     assert.isTrue(xid.equals(Xid.fromValue(obj2.id)))
   })
+
+  it('generates unique ids', () => {
+    const ids = new Array(10000)
+      .fill(0)
+      .map(() => new Xid().toString())
+      .sort()
+
+    let lastId = ''
+    const duplicateFound = ids.some((id) => {
+      if (lastId === id) return true
+      lastId = id
+      return false
+    })
+
+    assert.isFalse(duplicateFound, 'duplicate ids found in 10k ids generated')
+  })
 })
