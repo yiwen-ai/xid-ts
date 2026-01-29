@@ -103,7 +103,7 @@ export class Xid extends Uint8Array {
       }
 
       this[9] = state.counter >> 16
-      this[10] = state.counter & (0x00ffff >> 8)
+      this[10] = (state.counter >> 8) & 0xff
       this[11] = state.counter & 0x0000ff
     } else if (!(id instanceof Uint8Array) || id.length !== rawLen) {
       throw new Error(errInvalidID)
