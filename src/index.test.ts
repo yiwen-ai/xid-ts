@@ -23,7 +23,9 @@ describe('xid', () => {
 
     const now = Math.floor(Date.now() / 1000)
     const id1 = new Xid()
+    console.log(id1.toString())
     const id2 = new Xid()
+    console.log(id2.toString())
     assert.isFalse(id1.isZero())
     assert.isFalse(id2.isZero())
     assert.isFalse(id1.equals(id2))

@@ -1,7 +1,7 @@
 {
   "name": "xid-ts",
   "type": "module",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "author": "0xZensh <txr1883@gmail.com>",
   "description": "xid is a globally unique id generator thought for the web. A Typescript port of https://github.com/rs/xid.",
   "license": "MIT",
@@ -42,18 +42,18 @@
     "test": "vitest src --coverage --run"
   },
   "devDependencies": {
-    "@types/node": "^25.1.0",
-    "@typescript-eslint/eslint-plugin": "^8.54.0",
-    "@typescript-eslint/parser": "^8.54.0",
-    "@vitest/coverage-v8": "^4.0.18",
-    "cborg": "^4.5.8",
-    "eslint": "^9.39.2",
+    "@types/node": "^26.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.62.1",
+    "@typescript-eslint/parser": "^8.62.1",
+    "@vitest/coverage-v8": "^4.1.9",
+    "cborg": "^5.1.7",
+    "eslint": "^10.6.0",
     "eslint-plugin-import": "^2.32.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.5",
-    "prettier": "^3.8.1",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "eslint-plugin-prettier": "^5.5.6",
+    "prettier": "^3.9.4",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   },
   "dependencies": {},
   "keywords": [
