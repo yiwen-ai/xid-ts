@@ -19,7 +19,6 @@ jobs:
           package-manager-cache: false
           registry-url: "https://registry.npmjs.org"
       - run: |
-          npm install --global npm@latest
           npm install --global pnpm@latest
           pnpm install --no-frozen-lockfile
           pnpm lint

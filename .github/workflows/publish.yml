@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only run npm publish --dry-run"
+        type: boolean
+        default: true
 
 jobs:
   build:
@@ -19,9 +25,10 @@ jobs:
           node-version: 24
           package-manager-cache: false
           registry-url: "https://registry.npmjs.org"
-      # Trusted publishing needs npm CLI >= 11.5.1;
+      # Trusted publishing needs npm CLI >= 11.5.1; Node 24 already bundles a
+      # recent enough npm. Do NOT self-upgrade npm here: replacing a running
+      # npm can corrupt its install (e.g. "Cannot find module 'sigstore'").
       - run: |
-          npm install --global npm@latest
           npm install --global pnpm@latest
           pnpm install --no-frozen-lockfile
           pnpm lint
