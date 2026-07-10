@@ -27,6 +27,7 @@ jobs:
           pnpm lint
           pnpm test
           pnpm build
+          pnpm run test:dist
       - name: Dry-run npm publish
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
         run: npm publish --dry-run --access public

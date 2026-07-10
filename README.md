@@ -10,7 +10,7 @@ The binary representation is compatible with the Mongo DB 12-byte [ObjectId][obj
 The value consists of:
 
 - a 4-byte timestamp value in seconds since the Unix epoch
-- a 3-byte value based on the machine identifier
+- a 3-byte machine identifier
 - a 2-byte value based on the process id
 - a 3-byte incrementing counter, initialized to a random value
 
@@ -18,6 +18,27 @@ The string representation is 20 bytes, using a base32 hex variant with character
 to retain the sortable property of the id.
 
 See the original [`xid`] project for more details.
+
+## Differences from the Go implementation
+
+The wire format (bytes and string) is fully compatible with Go's [`xid`], but a few
+behaviors differ:
+
+- **Machine identifier**: Go derives it from the platform machine id or hostname, so all
+  processes on one machine share the same value. This port fills it with **random bytes**
+  per state instead: JavaScript runtimes often host many isolates, worker threads or
+  bundled copies of this module within one machine and even one process, and a per-state
+  random value keeps ids from those instances from colliding. The trade-off is that ids
+  cannot be grouped by machine.
+- **Process id**: taken from `process.pid` when available (without Go's container
+  `cpuset` mixing), otherwise 2 random bytes.
+- **JSON null**: like Go, a zero (nil) Xid serializes to JSON `null` (`toJSON()` returns
+  `null`), and `Xid.fromValue(null)` returns a zero Xid.
+
+## Requirements
+
+A runtime with the Web Crypto API (`crypto.getRandomValues`): Node.js >= 20, Deno, Bun,
+Cloudflare Workers, and all modern browsers.
 
 ## Usage
 
@@ -51,6 +72,14 @@ assert.equal(xid.equals(Xid.fromValue('9m4e2mr0ui3e8a215n4g')), true)
 assert.equal(xid.equals(Xid.fromValue([77, 136, 225, 91, 96, 244, 134, 228, 40, 65, 45, 201])), true)
 assert.equal(xid.equals(Xid.fromValue(Buffer.from([77, 136, 225, 91, 96, 244, 134, 228, 40, 65, 45, 201]))), true)
 assert.equal(xid.equals(Xid.fromValue(new Uint8Array([77, 136, 225, 91, 96, 244, 134, 228, 40, 65, 45, 201]))), true)
+
+// generate an id with a given time (the equivalent of Go's NewWithTime)
+const oldXid = Xid.newWithTime(1300816219)
+assert.equal(oldXid.timestamp(), 1300816219)
+
+// compare ids byte by byte (sorting by this order == sorting by string)
+const ids = [new Xid(), oldXid, xid]
+ids.sort((a, b) => a.compare(b))
 ```
 
 ### Encode & Decode With JSON and CBOR

@@ -25,3 +25,4 @@ jobs:
           pnpm lint
           pnpm test
           pnpm build
+          pnpm run test:dist

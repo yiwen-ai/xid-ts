@@ -1,7 +1,7 @@
 {
   "name": "xid-ts",
   "type": "module",
-  "version": "1.2.3",
+  "version": "1.3.0",
   "author": "0xZensh <txr1883@gmail.com>",
   "description": "xid is a globally unique id generator thought for the web. A Typescript port of https://github.com/rs/xid.",
   "license": "MIT",
@@ -19,21 +19,26 @@
   "unpkg": "./dist/esm/index.js",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js"
-    }
-  },
-  "typings": "./dist/esm/index.d.ts",
-  "browser": {
-    "node:crypto": false
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
+    },
+    "./package.json": "./package.json"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "scripts": {
-    "build": "npm run clean && tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
+    "build": "npm run clean && tsc -p tsconfig.json && tsc -p tsconfig-cjs.json && node scripts/fix-cjs.mjs",
+    "test:dist": "node scripts/test-dist.mjs",
     "clean": "rm -rf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

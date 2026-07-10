@@ -3,7 +3,7 @@
 
 import { assert, describe, it } from 'vitest'
 import { decode, encode } from 'cborg'
-import { Xid } from './index'
+import { newState, Xid } from './index'
 
 describe('xid', () => {
   it('new', () => {
@@ -127,6 +127,116 @@ describe('xid', () => {
 
     const obj2 = decode(data)
     assert.isTrue(xid.equals(Xid.fromValue(obj2.id)))
+  })
+
+  it('rejects invalid strings', () => {
+    // 'w' to 'z' are outside the base32 hex alphabet [0-9a-v]
+    assert.throws(() => Xid.parse('xxxxxxxxxxxxxxxxxxxx'))
+    // uppercase is invalid, same as the Go implementation
+    assert.throws(() => Xid.parse('9M4E2MR0UI3E8A215N4G'))
+    // non-ASCII characters
+    assert.throws(() => Xid.parse('9m4e2mr0ui3e8a215n4中'))
+    // the last character must have its low 4 bits set to zero:
+    // 'g' (16) is valid padding, 'h' (17) is not
+    assert.isTrue(Xid.parse('cirourjjtoj371ols49g').isZero() === false)
+    assert.throws(() => Xid.parse('cirourjjtoj371ols49h'))
+    // wrong length
+    assert.throws(() => Xid.parse(''))
+    assert.throws(() => Xid.parse('cirourjjtoj371ols49'))
+    assert.throws(() => Xid.parse('cirourjjtoj371ols49g0'))
+  })
+
+  it('fromValue with ArrayBuffer and nullish values', () => {
+    const bytes = new Uint8Array([
+      0x4d, 0x88, 0xe1, 0x5b, 0x60, 0xf4, 0x86, 0xe4, 0x28, 0x41, 0x2d, 0xc9
+    ])
+    const xid = Xid.fromValue(bytes.slice().buffer)
+    assert.equal(xid.toString(), '9m4e2mr0ui3e8a215n4g')
+    assert.throws(() => Xid.fromValue(new ArrayBuffer(11)))
+
+    // like the Go implementation, JSON null / SQL NULL means the nil ID
+    assert.isTrue(Xid.fromValue(null).isZero())
+    assert.isTrue(Xid.fromValue(undefined).isZero())
+  })
+
+  it('constructor validates the id', () => {
+    assert.throws(() => new Xid(new Uint8Array(11)))
+    assert.throws(() => new Xid(new Uint8Array(13)))
+    assert.throws(() => new Xid([1, 2, 3] as unknown as Uint8Array))
+  })
+
+  it('constructor validates the state', () => {
+    const state = newState()
+    assert.isFalse(new Xid(undefined, state).isZero())
+    assert.throws(
+      () => new Xid(undefined, { ...state, machineId: new Uint8Array(2) })
+    )
+    assert.throws(() => new Xid(undefined, { ...state, pid: 1.5 }))
+    assert.throws(() => new Xid(undefined, { ...state, counter: NaN }))
+  })
+
+  it('toJSON serializes the zero id to null like Go', () => {
+    assert.isNull(Xid.default().toJSON())
+    assert.equal(JSON.stringify({ id: Xid.default() }), '{"id":null}')
+
+    const obj = JSON.parse(JSON.stringify({ id: Xid.default() }))
+    assert.isTrue(Xid.fromValue(obj.id).isZero())
+
+    const xid = Xid.parse('9m4e2mr0ui3e8a215n4g')
+    assert.equal(xid.toJSON(), '9m4e2mr0ui3e8a215n4g')
+  })
+
+  it('compare', () => {
+    const a = Xid.parse('cirourjjtoj371ols490')
+    const b = Xid.parse('cirourjjtoj371ols49g')
+    assert.equal(a.compare(b), -1)
+    assert.equal(b.compare(a), 1)
+    assert.equal(a.compare(Xid.parse(a.toString())), 0)
+
+    // byte order and string order are equivalent
+    const ids = [b, a, Xid.default(), new Xid()]
+    const byBytes = ids
+      .slice()
+      .sort((x, y) => x.compare(y))
+      .map((x) => x.toString())
+    const byString = ids
+      .map((x) => x.toString())
+      .slice()
+      .sort()
+    assert.deepEqual(byBytes, byString)
+  })
+
+  it('newWithTime', () => {
+    const ts = 1300816219
+    const id1 = Xid.newWithTime(ts)
+    assert.equal(id1.timestamp(), ts)
+    const id2 = Xid.newWithTime(new Date(ts * 1000))
+    assert.equal(id2.timestamp(), ts)
+    assert.isFalse(id1.equals(id2))
+    assert.equal(id1.pid(), id2.pid())
+    assert.equal(id2.counter(), (id1.counter() + 1) & 0xffffff)
+
+    // timestamps beyond 2038 (> 2^31) stay unsigned
+    const id3 = Xid.newWithTime(0x90000000)
+    assert.equal(id3.timestamp(), 0x90000000)
+
+    assert.throws(() => Xid.newWithTime(NaN))
+    assert.throws(() => Xid.newWithTime(new Date(NaN)))
+  })
+
+  it('returns copies, not views', () => {
+    const xid = Xid.parse('9m4e2mr0ui3e8a215n4g')
+    const machine = xid.machine()
+    const bytes = xid.toBytes()
+    machine[0] = 0xff
+    bytes[0] = 0xff
+    assert.equal(xid.toString(), '9m4e2mr0ui3e8a215n4g')
+
+    // inherited array methods produce plain Uint8Array, not Xid
+    const sliced = xid.slice(4, 7)
+    assert.instanceOf(sliced, Uint8Array)
+    assert.notInstanceOf(sliced, Xid)
+    assert.deepEqual(Array.from(sliced), Array.from(xid.machine()))
   })
 
   it('generates unique ids', () => {
