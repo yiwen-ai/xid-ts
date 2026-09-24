@@ -1,8 +1,8 @@
 # `xid-ts`
 
 [![CI](https://github.com/yiwen-ai/xid-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/yiwen-ai/xid-ts/actions/workflows/ci.yml)
-[![NPM version](http://img.shields.io/npm/v/xid-ts.svg)](https://www.npmjs.com/package/xid-ts)
-[![License](http://img.shields.io/badge/license-mit-blue.svg?style=flat-square)](https://raw.githubusercontent.com/yiwen-ai/xid-ts/main/LICENSE)
+[![NPM version](https://img.shields.io/npm/v/xid-ts.svg)](https://www.npmjs.com/package/xid-ts)
+[![License](https://img.shields.io/badge/license-mit-blue.svg?style=flat-square)](https://raw.githubusercontent.com/yiwen-ai/xid-ts/main/LICENSE)
 
 Globally unique sortable id generator. A Typescript port of https://github.com/rs/xid.
 
@@ -73,7 +73,7 @@ assert.equal(xid.equals(Xid.fromValue([77, 136, 225, 91, 96, 244, 134, 228, 40, 
 assert.equal(xid.equals(Xid.fromValue(Buffer.from([77, 136, 225, 91, 96, 244, 134, 228, 40, 65, 45, 201]))), true)
 assert.equal(xid.equals(Xid.fromValue(new Uint8Array([77, 136, 225, 91, 96, 244, 134, 228, 40, 65, 45, 201]))), true)
 
-// generate an id with a given time (the equivalent of Go's NewWithTime)
+// generate an id with a given time in seconds, not milliseconds (the equivalent of Go's NewWithTime)
 const oldXid = Xid.newWithTime(1300816219)
 assert.equal(oldXid.timestamp(), 1300816219)
 
@@ -84,7 +84,7 @@ ids.sort((a, b) => a.compare(b))
 
 ### Encode & Decode With JSON and CBOR
 
-https://github.com/yiwen-ai/xid-ts/blob/main/src/index.test.ts#L70
+https://github.com/yiwen-ai/xid-ts/blob/main/src/index.test.ts
 
 ```ts
 import { decode, encode } from 'cborg'
@@ -111,33 +111,23 @@ assert.isTrue(xid.equals(Xid.fromValue(obj2.id)))
 
 ### Cloudflare Workers
 
+`new Xid()` works in Workers as is. The default state is created lazily on the first call
+(Workers forbid `crypto.getRandomValues` during module initialization), and its random
+machine identifier keeps ids from different isolates from colliding.
+
 ```ts
-import { DurableObject } from "cloudflare:workers"
-import { Xid, newState, type XidState } from 'xid-ts'
-
-export class GlobalState extends DurableObject {
-  #xidState: XidState = newState()
-
-  constructor(ctx: DurableObjectState, env: Env) {
-    super(ctx, env)
-  }
-
-  xid(): Xid {
-    return new Xid(undefined, this.#xidState)
-  }
-}
+import { Xid } from 'xid-ts'
 
 export default {
   async fetch(request, env, ctx): Promise<Response> {
-    const stub = env.GLOBAL_STATE.getByName("global")
-    // _id is not Xid instance because it comes from DurableObject RPC serialization
-    const _id = await stub.xid()
-    const id = new Xid(_id)
-    return new Response(JSON.stringify({id}), { status: 200 })
+    return Response.json({ id: new Xid() })
     // {"id":"d4amdocsodcmnao0bddg"}
   },
 } satisfies ExportedHandler<Env>
 ```
+
+An Xid passed through RPC (Durable Objects, service bindings) arrives as a plain
+`Uint8Array`; wrap it with `new Xid(bytes)` or `Xid.fromValue(bytes)`.
 
 [`xid`]:  https://github.com/rs/xid
 [object-id]: https://docs.mongodb.org/manual/reference/object-id/

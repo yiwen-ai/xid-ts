@@ -20,6 +20,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 24
@@ -29,8 +30,7 @@ jobs:
       # recent enough npm. Do NOT self-upgrade npm here: replacing a running
       # npm can corrupt its install (e.g. "Cannot find module 'sigstore'").
       - run: |
-          npm install --global pnpm@latest
-          pnpm install --no-frozen-lockfile
+          pnpm install --frozen-lockfile
           pnpm lint
           pnpm test
           pnpm build

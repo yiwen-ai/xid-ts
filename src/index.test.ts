@@ -23,9 +23,7 @@ describe('xid', () => {
 
     const now = Math.floor(Date.now() / 1000)
     const id1 = new Xid()
-    console.log(id1.toString())
     const id2 = new Xid()
-    console.log(id2.toString())
     assert.isFalse(id1.isZero())
     assert.isFalse(id2.isZero())
     assert.isFalse(id1.equals(id2))
@@ -33,7 +31,9 @@ describe('xid', () => {
     assert.isTrue(id2.timestamp() >= now)
     assert.equal(id1.pid(), globalThis.process.pid & 0xffff)
     assert.equal(id2.pid(), globalThis.process.pid & 0xffff)
-    // assert.equal(id2.machine().toString(), id1.machine().toString())
+
+    // only the last byte set
+    assert.isFalse(new Xid(new Uint8Array(12).fill(1, 11)).isZero())
   })
 
   it('parse', () => {
@@ -56,9 +56,6 @@ describe('xid', () => {
   it('fromValue', () => {
     const xid = Xid.fromValue('9m4e2mr0ui3e8a215n4g')
     assert.equal(xid.toString(), '9m4e2mr0ui3e8a215n4g')
-    // console.log(xid.toBytes())
-    // console.log(xid.timestamp())
-    // console.log(xid.counter())
     assert.isTrue(xid == Xid.fromValue(xid))
     assert.isTrue(xid.equals(Xid.fromValue(xid)))
     assert.isTrue(
@@ -175,6 +172,13 @@ describe('xid', () => {
     assert.throws(() => new Xid(undefined, { ...state, counter: NaN }))
   })
 
+  it('counter wraps around', () => {
+    const state = { ...newState(), counter: 0xfffffe }
+    assert.equal(new Xid(undefined, state).counter(), 0xffffff)
+    assert.equal(new Xid(undefined, state).counter(), 0)
+    assert.equal(state.counter, 0)
+  })
+
   it('toJSON serializes the zero id to null like Go', () => {
     assert.isNull(Xid.default().toJSON())
     assert.equal(JSON.stringify({ id: Xid.default() }), '{"id":null}')
@@ -220,8 +224,13 @@ describe('xid', () => {
     const id3 = Xid.newWithTime(0x90000000)
     assert.equal(id3.timestamp(), 0x90000000)
 
+    assert.equal(Xid.newWithTime(0xffffffff).timestamp(), 0xffffffff)
+
     assert.throws(() => Xid.newWithTime(NaN))
     assert.throws(() => Xid.newWithTime(new Date(NaN)))
+    // out of the 4-byte unsigned range, e.g. milliseconds passed by mistake
+    assert.throws(() => Xid.newWithTime(Date.now()))
+    assert.throws(() => Xid.newWithTime(-1))
   })
 
   it('returns copies, not views', () => {

@@ -1,7 +1,7 @@
 {
   "name": "xid-ts",
   "type": "module",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "author": "0xZensh <txr1883@gmail.com>",
   "description": "xid is a globally unique id generator thought for the web. A Typescript port of https://github.com/rs/xid.",
   "license": "MIT",
@@ -11,10 +11,7 @@
     "url": "git+https://github.com/yiwen-ai/xid-ts.git"
   },
   "files": [
-    "dist",
-    "package.json",
-    "LICENSE",
-    "README.md"
+    "dist"
   ],
   "unpkg": "./dist/esm/index.js",
   "main": "./dist/cjs/index.js",
@@ -36,31 +33,24 @@
   "engines": {
     "node": ">=20.0.0"
   },
+  "packageManager": "pnpm@11.7.0",
   "scripts": {
     "build": "npm run clean && tsc -p tsconfig.json && tsc -p tsconfig-cjs.json && node scripts/fix-cjs.mjs",
     "test:dist": "node scripts/test-dist.mjs",
     "clean": "rm -rf dist",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"src/**/*.{json,js,jsx,ts,tsx,css,scss,svelte}\"",
+    "lint": "tsc --noEmit -p tsconfig.json && prettier --check src scripts",
+    "format": "prettier --write src scripts",
     "ncu": "npx npm-check-updates -u",
     "test": "vitest src --coverage --run"
   },
   "devDependencies": {
     "@types/node": "^26.1.0",
-    "@typescript-eslint/eslint-plugin": "^8.62.1",
-    "@typescript-eslint/parser": "^8.62.1",
     "@vitest/coverage-v8": "^4.1.9",
     "cborg": "^5.1.7",
-    "eslint": "^10.6.0",
-    "eslint-plugin-import": "^2.32.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.6",
     "prettier": "^3.9.4",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"
   },
-  "dependencies": {},
   "keywords": [
     "xid",
     "unique",

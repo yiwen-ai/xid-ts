@@ -4,13 +4,8 @@
     "module": "esnext",
     "rootDir": "src",
     "outDir": "dist/esm",
-    "importHelpers": true,
     "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
     "strict": true,
-    "sourceMap": true,
     "declaration": true
   },
   "include": ["src/**/*.ts"],

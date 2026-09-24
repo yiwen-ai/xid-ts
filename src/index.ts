@@ -14,14 +14,6 @@ for (let i = 0; i < encoding.length; i++) {
 
 const zeroID = new Uint8Array(rawLen)
 
-// Web Crypto is available in all supported runtimes: modern browsers,
-// Node.js >= 19, Deno, Bun and Cloudflare Workers.
-const crypto_0 =
-  typeof globalThis === 'object' &&
-  typeof globalThis.crypto?.getRandomValues === 'function'
-    ? globalThis.crypto
-    : undefined
-
 // instanceof-free checks that also work for values from another realm
 // (e.g. node:vm contexts, iframes, worker RPC boundaries)
 function isUint8Array(v: unknown): v is Uint8Array {
@@ -90,6 +82,71 @@ function getDefaultState(): XidState {
   return defaultState
 }
 
+// Fills xid with a new id for the given time (seconds since the Unix epoch)
+// and advances the state's counter.
+function generate(xid: Uint8Array, time: number, st: XidState): void {
+  if (
+    !isUint8Array(st.machineId) ||
+    st.machineId.length < 3 ||
+    !Number.isInteger(st.pid) ||
+    !Number.isInteger(st.counter)
+  ) {
+    throw new Error('xid: invalid state')
+  }
+
+  xid[0] = (time >> 24) & 0xff
+  xid[1] = (time >> 16) & 0xff
+  xid[2] = (time >> 8) & 0xff
+  xid[3] = time & 0xff
+
+  xid[4] = st.machineId[0]
+  xid[5] = st.machineId[1]
+  xid[6] = st.machineId[2]
+  xid[7] = (st.pid >> 8) & 0xff
+  xid[8] = st.pid & 0xff
+
+  st.counter = (st.counter + 1) & 0xffffff
+  xid[9] = (st.counter >> 16) & 0xff
+  xid[10] = (st.counter >> 8) & 0xff
+  xid[11] = st.counter & 0xff
+}
+
+// Decodes the 20-char string representation into xid.
+function decodeInto(xid: Uint8Array, str: string): void {
+  if (str.length !== encodedLen) {
+    throw new Error(errInvalidID)
+  }
+
+  // decode each character to its 5-bit value first
+  const vals = new Uint8Array(encodedLen)
+  for (let i = 0; i < encodedLen; i++) {
+    const v = dec[str.charCodeAt(i)] ?? 0xff
+    if (v === 0xff) {
+      throw new Error(errInvalidID)
+    }
+    vals[i] = v
+  }
+
+  // the last character only carries 1 bit of data,
+  // its low 4 bits must be zero padding
+  if ((vals[19] & 0x0f) !== 0) {
+    throw new Error(errInvalidID)
+  }
+
+  xid[0] = (vals[0] << 3) | (vals[1] >> 2)
+  xid[1] = (vals[1] << 6) | (vals[2] << 1) | (vals[3] >> 4)
+  xid[2] = (vals[3] << 4) | (vals[4] >> 1)
+  xid[3] = (vals[4] << 7) | (vals[5] << 2) | (vals[6] >> 3)
+  xid[4] = (vals[6] << 5) | vals[7]
+  xid[5] = (vals[8] << 3) | (vals[9] >> 2)
+  xid[6] = (vals[9] << 6) | (vals[10] << 1) | (vals[11] >> 4)
+  xid[7] = (vals[11] << 4) | (vals[12] >> 1)
+  xid[8] = (vals[12] << 7) | (vals[13] << 2) | (vals[14] >> 3)
+  xid[9] = (vals[14] << 5) | vals[15]
+  xid[10] = (vals[16] << 3) | (vals[17] >> 2)
+  xid[11] = (vals[17] << 6) | (vals[18] << 1) | (vals[19] >> 4)
+}
+
 /**
  * Xid is a globally unique sortable ID.
  * It is a Typescript port of https://github.com/rs/xid.
@@ -117,38 +174,13 @@ export class Xid extends Uint8Array {
    * If `id` is not provided, a new ID is generated.
    * @param id - An optional 12-byte Uint8Array to use as the ID.
    * @param state - The optional state to use for generating a new ID. In most cases, the default state is sufficient.
-   * But for Cloudflare Workers, you may want to create and manage your own state using `newState()` and hold it with DurableObject.
+   * It is created lazily on first use, so it also works in runtimes such as Cloudflare Workers.
    */
   constructor(id?: Uint8Array, state?: XidState) {
     super(rawLen)
 
     if (id == null) {
-      const st = state ?? getDefaultState()
-      if (
-        !isUint8Array(st.machineId) ||
-        st.machineId.length < 3 ||
-        !Number.isInteger(st.pid) ||
-        !Number.isInteger(st.counter)
-      ) {
-        throw new Error('xid: invalid state')
-      }
-
-      const timestamp = Math.floor(Date.now() / 1000)
-      this[0] = (timestamp >> 24) & 0xff
-      this[1] = (timestamp >> 16) & 0xff
-      this[2] = (timestamp >> 8) & 0xff
-      this[3] = timestamp & 0xff
-
-      this[4] = st.machineId[0]
-      this[5] = st.machineId[1]
-      this[6] = st.machineId[2]
-      this[7] = (st.pid >> 8) & 0xff
-      this[8] = st.pid & 0xff
-
-      st.counter = (st.counter + 1) & 0xffffff
-      this[9] = (st.counter >> 16) & 0xff
-      this[10] = (st.counter >> 8) & 0xff
-      this[11] = st.counter & 0xff
+      generate(this, Math.floor(Date.now() / 1000), state ?? getDefaultState())
     } else if (!isUint8Array(id) || id.length !== rawLen) {
       throw new Error(errInvalidID)
     } else {
@@ -169,22 +201,19 @@ export class Xid extends Uint8Array {
    * Generates a new Xid with the given time instead of the current time.
    * The rest of the id (machine id, pid, counter) is generated as usual.
    * This is the equivalent of Go's `NewWithTime`.
-   * @param time - The time as seconds since the Unix epoch, or a Date.
+   * @param time - The time as seconds (not milliseconds) since the Unix epoch, or a Date.
    * @param state - The optional state, see the constructor.
    * @returns A new Xid.
+   * @throws If the time does not fit the 4-byte unsigned timestamp (1970 to 2106).
    */
   static newWithTime(time: number | Date, state?: XidState): Xid {
-    const ts = time instanceof Date ? time.getTime() / 1000 : time
-    if (typeof ts !== 'number' || !Number.isFinite(ts)) {
+    const t = Math.floor(time instanceof Date ? time.getTime() / 1000 : time)
+    if (!(t >= 0 && t <= 0xffffffff)) {
       throw new Error('xid: invalid time')
     }
 
-    const xid = new Xid(undefined, state)
-    const t = Math.floor(ts)
-    xid[0] = (t >> 24) & 0xff
-    xid[1] = (t >> 16) & 0xff
-    xid[2] = (t >> 8) & 0xff
-    xid[3] = t & 0xff
+    const xid = new Xid(zeroID)
+    generate(xid, t, state ?? getDefaultState())
     return xid
   }
 
@@ -240,43 +269,8 @@ export class Xid extends Uint8Array {
    */
   static parse(id: string): Xid {
     const xid = new Xid(zeroID)
-    xid.decode(id)
+    decodeInto(xid, id)
     return xid
-  }
-
-  private decode(str: string) {
-    if (str.length !== encodedLen) {
-      throw new Error(errInvalidID)
-    }
-
-    // decode each character to its 5-bit value first
-    const vals = new Uint8Array(encodedLen)
-    for (let i = 0; i < encodedLen; i++) {
-      const v = dec[str.charCodeAt(i)] ?? 0xff
-      if (v === 0xff) {
-        throw new Error(errInvalidID)
-      }
-      vals[i] = v
-    }
-
-    // the last character only carries 1 bit of data,
-    // its low 4 bits must be zero padding
-    if ((vals[19] & 0x0f) !== 0) {
-      throw new Error(errInvalidID)
-    }
-
-    this[0] = (vals[0] << 3) | (vals[1] >> 2)
-    this[1] = (vals[1] << 6) | (vals[2] << 1) | (vals[3] >> 4)
-    this[2] = (vals[3] << 4) | (vals[4] >> 1)
-    this[3] = (vals[4] << 7) | (vals[5] << 2) | (vals[6] >> 3)
-    this[4] = (vals[6] << 5) | vals[7]
-    this[5] = (vals[8] << 3) | (vals[9] >> 2)
-    this[6] = (vals[9] << 6) | (vals[10] << 1) | (vals[11] >> 4)
-    this[7] = (vals[11] << 4) | (vals[12] >> 1)
-    this[8] = (vals[12] << 7) | (vals[13] << 2) | (vals[14] >> 3)
-    this[9] = (vals[14] << 5) | vals[15]
-    this[10] = (vals[16] << 3) | (vals[17] >> 2)
-    this[11] = (vals[17] << 6) | (vals[18] << 1) | (vals[19] >> 4)
   }
 
   /**
@@ -313,9 +307,7 @@ export class Xid extends Uint8Array {
    * @returns The timestamp in seconds since the Unix epoch.
    */
   timestamp(): number {
-    return (
-      ((this[0] << 24) | (this[1] << 16) | (this[2] << 8) | this[3]) >>> 0
-    )
+    return ((this[0] << 24) | (this[1] << 16) | (this[2] << 8) | this[3]) >>> 0
   }
 
   /**
@@ -347,7 +339,12 @@ export class Xid extends Uint8Array {
    * @returns True if the Xid is zero, false otherwise.
    */
   isZero(): boolean {
-    return this.every((byte) => byte === 0)
+    for (let i = 0; i < rawLen; i++) {
+      if (this[i] !== 0) {
+        return false
+      }
+    }
+    return true
   }
 
   /**
@@ -405,19 +402,20 @@ export class Xid extends Uint8Array {
 }
 
 function getRandomBytes(n: number): Uint8Array {
-  if (crypto_0 === undefined) {
+  // Web Crypto is available in all supported runtimes: modern browsers,
+  // Node.js >= 19, Deno, Bun and Cloudflare Workers. It is looked up on each
+  // call so that polyfills installed after this module loads still work.
+  const crypto = globalThis.crypto
+  if (typeof crypto?.getRandomValues !== 'function') {
     throw new Error('xid: crypto.getRandomValues is not available')
   }
-  return crypto_0.getRandomValues(new Uint8Array(n))
+  return crypto.getRandomValues(new Uint8Array(n))
 }
 
 function getPid(): number {
-  if (
-    typeof globalThis === 'object' &&
-    'process' in globalThis &&
-    typeof ((globalThis as any).process as any)?.pid === 'number'
-  ) {
-    return ((globalThis as any).process as any).pid & 0xffff
+  const pid = (globalThis as { process?: { pid?: unknown } }).process?.pid
+  if (typeof pid === 'number') {
+    return pid & 0xffff
   }
 
   const buf = getRandomBytes(2)
